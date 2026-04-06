@@ -16,17 +16,26 @@ st.set_page_config(page_title="OPENBOOK 書評小程式", page_icon="📖", layo
 st.title("📖 OPENBOOK 書評自動生成器 (專業分享版)")
 st.markdown("請填寫書籍資訊並勾選需要的分析項目，AI 將為您自動整合分析並產出百字書評。")
 
+# === 🌟 絕對不報錯：自動抓取真實可用模型 ===
+available_models = []
+try:
+    # 讓程式自己去問 Google 這把鑰匙有哪些權限
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            clean_name = m.name.replace("models/", "")
+            available_models.append(clean_name)
+except Exception as e:
+    st.error(f"無法獲取模型清單，可能是 API 金鑰失效或連線問題。詳細錯誤：{e}")
+    st.stop()
+
+if not available_models:
+    st.error("您的 API 金鑰目前沒有任何可用模型的權限。")
+    st.stop()
+
 # 0. 選擇 AI 模型
 st.subheader("⚙️ AI 模型設定")
-st.markdown("💡 **推薦選擇 `gemini-1.5-pro-latest`**。如果再次遇到 404 錯誤，請選擇最下方的安全牌 `gemini-pro`！")
-
-# 放棄自動抓取，改用最穩定的手動清單 (加上了 latest 後綴)
-stable_models = [
-    "gemini-1.5-pro-latest",
-    "gemini-1.5-flash-latest",
-    "gemini-pro" # 這是 1.0 版，最老但也最不容易報錯的終極備案
-]
-selected_model = st.selectbox("請選擇模型：", stable_models)
+st.markdown("💡 下方選單是系統即時為您抓取的**絕對可用清單**。請在裡面尋找帶有 **`pro`** 字眼的模型（如 `gemini-1.5-pro-001` 或 `latest`）來獲得最深度的書評。")
+selected_model = st.selectbox("請選擇模型：", available_models)
 st.markdown("---")
 
 # 1. 必填：主書籍資訊
