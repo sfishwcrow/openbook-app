@@ -5,7 +5,6 @@ import google.generativeai as genai
 # 🔐 安全升級：從 Streamlit Secrets 讀取金鑰 🔐
 # ==========================================
 try:
-    # 這裡會自動去抓取您在 Streamlit 後台設定的密碼
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=GOOGLE_API_KEY)
 except Exception as e:
@@ -17,22 +16,17 @@ st.set_page_config(page_title="OPENBOOK 書評小程式", page_icon="📖", layo
 st.title("📖 OPENBOOK 書評自動生成器 (專業分享版)")
 st.markdown("請填寫書籍資訊並勾選需要的分析項目，AI 將為您自動整合分析並產出百字書評。")
 
-# === 自動抓取支援的模型清單 ===
-try:
-    available_models = []
-    for m in genai.list_models():
-        if 'generateContent' in m.supported_generation_methods:
-            clean_name = m.name.replace("models/", "")
-            available_models.append(clean_name)
-    if not available_models:
-        st.error("您的 API Key 似乎沒有可用模型權限。")
-except Exception as e:
-    available_models = ["gemini-1.5-pro", "gemini-1.5-flash"]
-
 # 0. 選擇 AI 模型
 st.subheader("⚙️ AI 模型設定")
-st.markdown("💡 **推薦選擇帶有 `pro` 字眼的模型**，能獲得更深度的思考與分析喔！")
-selected_model = st.selectbox("請選擇模型：", available_models)
+st.markdown("💡 **推薦選擇 `gemini-1.5-pro-latest`**。如果再次遇到 404 錯誤，請選擇最下方的安全牌 `gemini-pro`！")
+
+# 放棄自動抓取，改用最穩定的手動清單 (加上了 latest 後綴)
+stable_models = [
+    "gemini-1.5-pro-latest",
+    "gemini-1.5-flash-latest",
+    "gemini-pro" # 這是 1.0 版，最老但也最不容易報錯的終極備案
+]
+selected_model = st.selectbox("請選擇模型：", stable_models)
 st.markdown("---")
 
 # 1. 必填：主書籍資訊
