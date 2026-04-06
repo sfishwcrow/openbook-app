@@ -14,6 +14,28 @@ st.set_page_config(page_title="OPENBOOK 書評小程式", page_icon="📖")
 st.title("📖 OPENBOOK 書評自動生成器")
 st.markdown("輸入書籍與參考資料網址，AI 將為您自動整合分析並產出百字書評。")
 
+# === 🌟 終極殺手鐧：自動抓取支援的模型清單 ===
+try:
+    available_models = []
+    # 掃描這把金鑰可以用的所有模型
+    for m in genai.list_models():
+        if 'generateContent' in m.supported_generation_methods:
+            # 把前綴 "models/" 去掉，讓選單看起來乾淨一點
+            clean_name = m.name.replace("models/", "")
+            available_models.append(clean_name)
+    
+    if not available_models:
+        st.error("您的 API Key 似乎沒有任何可用模型權限，請確認金鑰是否正確。")
+except Exception as e:
+    st.error(f"無法讀取模型清單，請檢查 API Key。詳細錯誤：{e}")
+    available_models = ["gemini-1.5-flash"] # 萬一連線失敗給個預設值
+
+# 0. 選擇 AI 模型
+st.subheader("⚙️ AI 模型設定")
+st.markdown("系統已自動抓取您可用的模型，如果不知道選哪個，**保留預設的第一個**即可！")
+selected_model = st.selectbox("請選擇模型：", available_models)
+st.markdown("---")
+
 # 1. 必填：主書籍網址
 st.subheader("📚 主書籍")
 book_url = st.text_input("主書籍網址 (必填)：", placeholder="請貼上書籍的網頁連結")
@@ -33,11 +55,10 @@ if st.button("🚀 開始分析與生成", type="primary"):
     if not book_url:
         st.error("請務必輸入「主書籍網址」！")
     else:
-        with st.spinner("AI 正在讀取網址並進行深度分析，請稍候..."):
+        with st.spinner(f"AI 正在使用 {selected_model} 進行深度分析，請稍候..."):
             try:
                 # 收集所有填寫的補充網址
                 all_extra_urls = [url_1, url_2, url_3, url_4, url_5]
-                # 過濾掉空白的格子
                 valid_extra_urls = [url.strip() for url in all_extra_urls if url.strip()]
                 extra_urls_str = "\n".join(valid_extra_urls) if valid_extra_urls else "無"
 
@@ -66,8 +87,8 @@ if st.button("🚀 開始分析與生成", type="primary"):
                 根據上方的深度分析，撰寫一篇字數約在 100 字左右的精煉書評。要求文筆流暢、觀點精闢，能迅速勾起讀者的閱讀興趣。
                 """
 
-                # 呼叫模型
-                model = genai.GenerativeModel('gemini-pro')
+                # 🔥 這裡改成動態載入您在下拉選單選取的模型！
+                model = genai.GenerativeModel(selected_model)
                 response = model.generate_content(prompt)
 
                 # 顯示結果
