@@ -2,16 +2,19 @@ import streamlit as st
 import google.generativeai as genai
 
 # ==========================================
-# 🔑 請在下方引號內替換成您的 Gemini API Key 🔑
+# 🔐 安全升級：從 Streamlit Secrets 讀取金鑰 🔐
 # ==========================================
-GOOGLE_API_KEY = "AIzaSyCeMv9WbDJuLGvwfIJ9LiZ7UgjgHMEkIAk"
-
-# 設定 API 金鑰
-genai.configure(api_key=GOOGLE_API_KEY)
+try:
+    # 這裡會自動去抓取您在 Streamlit 後台設定的密碼
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    genai.configure(api_key=GOOGLE_API_KEY)
+except Exception as e:
+    st.error("❌ 找不到 API 金鑰設定，請確認 Streamlit Secrets 已正確配置。")
+    st.stop()
 
 # 網頁基本設定
 st.set_page_config(page_title="OPENBOOK 書評小程式", page_icon="📖", layout="wide")
-st.title("📖 OPENBOOK 書評自動生成器 (彈性分析版)")
+st.title("📖 OPENBOOK 書評自動生成器 (專業分享版)")
 st.markdown("請填寫書籍資訊並勾選需要的分析項目，AI 將為您自動整合分析並產出百字書評。")
 
 # === 自動抓取支援的模型清單 ===
@@ -57,7 +60,7 @@ with col_ref3:
 
 # 3. 分析項目設定 (動態勾選)
 st.subheader("🔍 3. 勾選額外分析項目")
-st.markdown("基本必備項目：**主題、結構、優點、閱讀樂趣** (將自動包含)。\n請根據書籍類型勾選您需要的額外分析面向：")
+st.markdown("基本必備項目：**主題、結構、優點、閱讀樂趣** (將自動包含)。")
 
 col_chk1, col_chk2, col_chk3, col_chk4, col_chk5 = st.columns(5)
 with col_chk1:
@@ -73,18 +76,15 @@ with col_chk5:
 
 # 執行按鈕
 if st.button("🚀 開始分析與生成", type="primary", use_container_width=True):
-    # 檢查必填欄位
     if not book_title.strip() or not book_author.strip() or not book_content.strip():
         st.error("請務必填寫「書名」、「作者」與「書籍簡介」！")
     else:
         with st.spinner(f"AI 正在使用 {selected_model} 進行深度分析，請稍候..."):
             try:
-                # 收集所有填寫的補充內容
                 all_extras = [extra_1, extra_2, extra_3]
                 valid_extras = [text.strip() for text in all_extras if text.strip()]
                 extra_text_str = "\n\n---\n\n".join(valid_extras) if valid_extras else "無"
 
-                # === 建立動態的分析項目清單 ===
                 analysis_items = [
                     "* **主題 (Theme)**: 探討的核心議題與深層思想。",
                     "* **結構 (Structure)**: 敘事編排、章節安排與節奏。",
@@ -92,55 +92,29 @@ if st.button("🚀 開始分析與生成", type="primary", use_container_width=T
                     "* **閱讀樂趣 (Reading Pleasure)**: 帶給讀者的情感共鳴或智性啟發。"
                 ]
                 
-                # 根據使用者的勾選狀態，把額外項目加進去
-                if check_content:
-                    analysis_items.insert(0, "* **內容 (Content)**: 簡述本書的核心情節或重點涵蓋範圍。") # 習慣上內容放最前面比較順
-                if check_literary:
-                    analysis_items.append("* **文學手法 (Literary Techniques)**: 筆法、修辭、象徵或獨特文風。")
-                if check_arguments:
-                    analysis_items.append("* **論點 (Arguments)**: 作者提出的主要觀點或主張。")
-                if check_social:
-                    analysis_items.append("* **社會意義 (Social Significance)**: 本書對當代社會、文化或讀者價值觀的啟發與影響。")
-                if check_visual:
-                    analysis_items.append("* **圖像技巧 (Visual Techniques)**: 插畫風格、媒材運用、圖文搭配與視覺敘事表現。")
+                if check_content: analysis_items.insert(0, "* **內容 (Content)**: 簡述本書的核心情節或重點涵蓋範圍。")
+                if check_literary: analysis_items.append("* **文學手法 (Literary Techniques)**: 筆法、修辭、象徵或獨特文風。")
+                if check_arguments: analysis_items.append("* **論點 (Arguments)**: 作者提出的主要觀點或主張。")
+                if check_social: analysis_items.append("* **社會意義 (Social Significance)**: 本書對當代社會、文化或讀者價值觀的啟發與影響。")
+                if check_visual: analysis_items.append("* **圖像技巧 (Visual Techniques)**: 插畫風格、媒材運用、圖文搭配與視覺敘事表現。")
 
-                # 將清單組合為字串
                 analysis_items_str = "\n                ".join(analysis_items)
-                total_items_count = len(analysis_items)
-
-                # 建立 AI Prompt
+                
                 prompt = f"""
-                你是一位專業的書籍評論家，特別擅長為台灣的 OPENBOOK 閱讀誌撰寫書評。
-                請閱讀以下我提供的書籍資訊與文章內容，並執行分析與書評撰寫。所有輸出必須為「繁體中文」。
-
-                【資料來源】
-                [主書籍]
-                書名: {book_title}
-                作者: {book_author}
-                出版社: {book_publisher if book_publisher.strip() else "未提供"}
-                書籍簡介/內容:
-                {book_content}
-
-                [補充參考文章內容] (需整合這些內容的觀點):
-                {extra_text_str}
-
-                【任務要求】
-                請提供以下兩個部分的輸出：
-
-                ### 【輸出 1：整合深度分析】
-                請綜合上述所有內容的洞察，精準分析以下 {total_items_count} 個面向：
+                你是一位專業的書籍評論家，特別擅長為台灣的 OPENBOOK 閱讀誌撰寫書評。所有輸出必須為「繁體中文」。
+                [主書籍] 書名: {book_title} / 作者: {book_author} / 出版社: {book_publisher}
+                內容: {book_content}
+                [補充參考] {extra_text_str}
+                [任務要求]
+                1. 輸出 1：針對以下面向進行深度整合分析：
                 {analysis_items_str}
-
-                ### 【輸出 2：OPENBOOK 百字書評】
-                根據上方的深度分析，撰寫一篇字數約在 100 字左右的精煉書評。請在書評的開頭自然地帶入書名與作者，要求文筆流暢、觀點精闢，能迅速勾起讀者的閱讀興趣。
+                2. 輸出 2：撰寫約 100 字精煉書評，開頭自然帶入書名作者。
                 """
 
                 model = genai.GenerativeModel(selected_model)
                 response = model.generate_content(prompt)
-
                 st.success("✅ 生成完成！")
                 st.markdown("---")
                 st.markdown(response.text)
-
             except Exception as e:
                 st.error(f"發生錯誤：{e}")
