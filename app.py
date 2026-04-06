@@ -67,7 +67,7 @@ if st.button("🚀 開始分析與生成", type="primary"):
                 """
 
                 # 呼叫模型
-                model = genai.GenerativeModel('gemini-1.5-pro')
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 response = model.generate_content(prompt)
 
                 # 顯示結果
