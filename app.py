@@ -13,28 +13,29 @@ except Exception as e:
 
 # 網頁基本設定
 st.set_page_config(page_title="OPENBOOK 書評小程式", page_icon="📖", layout="wide")
-st.title("📖 OPENBOOK 書評自動生成器 (專業分享版)")
+st.title("📖 OPENBOOK 書評自動生成器 (穩定過濾版)")
 st.markdown("請填寫書籍資訊並勾選需要的分析項目，AI 將為您自動整合分析並產出百字書評。")
 
-# === 🌟 絕對不報錯：自動抓取真實可用模型 ===
+# === 🌟 終極防雷：只抓取有免費額度的 1.5 系列模型 ===
 available_models = []
 try:
-    # 讓程式自己去問 Google 這把鑰匙有哪些權限
     for m in genai.list_models():
         if 'generateContent' in m.supported_generation_methods:
             clean_name = m.name.replace("models/", "")
-            available_models.append(clean_name)
+            # 【關鍵修改】只把名字裡包含 "1.5" 的模型加進清單，過濾掉 0 額度的 2.0/2.5 系列
+            if "1.5" in clean_name:
+                available_models.append(clean_name)
 except Exception as e:
-    st.error(f"無法獲取模型清單，可能是 API 金鑰失效或連線問題。詳細錯誤：{e}")
+    st.error(f"無法獲取模型清單。詳細錯誤：{e}")
     st.stop()
 
 if not available_models:
-    st.error("您的 API 金鑰目前沒有任何可用模型的權限。")
+    st.error("您的 API 金鑰目前沒有可用的 1.5 系列模型權限。")
     st.stop()
 
 # 0. 選擇 AI 模型
 st.subheader("⚙️ AI 模型設定")
-st.markdown("💡 下方選單是系統即時為您抓取的**絕對可用清單**。請在裡面尋找帶有 **`pro`** 字眼的模型（如 `gemini-1.5-pro-001` 或 `latest`）來獲得最深度的書評。")
+st.markdown("💡 下方選單已自動過濾掉無額度的陷阱模型。請安心選擇 **`gemini-1.5-pro`** 相關選項！")
 selected_model = st.selectbox("請選擇模型：", available_models)
 st.markdown("---")
 
