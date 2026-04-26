@@ -13,7 +13,7 @@ except Exception as e:
 
 # 網頁基本設定
 st.set_page_config(page_title="OPENBOOK 書評小程式", page_icon="📖", layout="wide")
-st.title("📖 OPENBOOK 書評自動生成器 (穩定過濾版)")
+st.title("📖 OPENBOOK 書評自動生成器 (純粹精煉版)")
 st.markdown("請填寫書籍資訊並勾選需要的分析項目，AI 將為您自動整合分析並產出百字書評。")
 
 # === 🌟 終極防雷：只抓取有免費額度的 1.5 系列模型 ===
@@ -22,7 +22,6 @@ try:
     for m in genai.list_models():
         if 'generateContent' in m.supported_generation_methods:
             clean_name = m.name.replace("models/", "")
-            # 【關鍵修改】只把名字裡包含 "1.5" 的模型加進清單，過濾掉 0 額度的 2.0/2.5 系列
             if "1.5" in clean_name:
                 available_models.append(clean_name)
 except Exception as e:
@@ -35,7 +34,7 @@ if not available_models:
 
 # 0. 選擇 AI 模型
 st.subheader("⚙️ AI 模型設定")
-st.markdown("💡 下方選單已自動過濾掉無額度的陷阱模型。請安心選擇 **`gemini-1.5-pro`** 相關選項！")
+st.markdown("💡 推薦選擇 **`gemini-1.5-pro`** 相關選項以獲得最深度的分析！")
 selected_model = st.selectbox("請選擇模型：", available_models)
 st.markdown("---")
 
@@ -104,15 +103,20 @@ if st.button("🚀 開始分析與生成", type="primary", use_container_width=T
 
                 analysis_items_str = "\n                ".join(analysis_items)
                 
+                # 🔥 這裡更新了給 AI 的核心指令
                 prompt = f"""
                 你是一位專業的書籍評論家，特別擅長為台灣的 OPENBOOK 閱讀誌撰寫書評。所有輸出必須為「繁體中文」。
                 [主書籍] 書名: {book_title} / 作者: {book_author} / 出版社: {book_publisher}
                 內容: {book_content}
                 [補充參考] {extra_text_str}
+                
                 [任務要求]
                 1. 輸出 1：針對以下面向進行深度整合分析：
                 {analysis_items_str}
-                2. 輸出 2：撰寫約 100 字精煉書評，開頭自然帶入書名作者。
+                
+                2. 輸出 2：嚴格根據上方「輸出 1」的分析結果，撰寫一篇約 100 字的精煉書評。
+                ⚠️ 絕對禁止：書評正文中請「絕對不要」出現書名與作者姓名。
+                要求文筆流暢、觀點精闢，能迅速勾起讀者的閱讀興趣。
                 """
 
                 model = genai.GenerativeModel(selected_model)
