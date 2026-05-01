@@ -16,20 +16,21 @@ st.set_page_config(page_title="OPENBOOK 書評小程式", page_icon="📖", layo
 st.title("📖 OPENBOOK 書評自動生成器 (純粹精煉版)")
 st.markdown("請填寫書籍資訊並勾選需要的分析項目，AI 將為您自動整合分析並產出百字書評。")
 
-# === 🌟 終極防雷：只抓取有免費額度的 1.5 系列模型 ===
+# === 🌟 終極防雷：精準過濾，徹底排除 Robotics 機器人模型 ===
 available_models = []
 try:
     for m in genai.list_models():
         if 'generateContent' in m.supported_generation_methods:
             clean_name = m.name.replace("models/", "")
-            if "1.5" in clean_name:
+            # 【關鍵修改】嚴格限制只抓取 pro 和 flash 文字模型，排除其他陷阱
+            if clean_name.startswith("gemini-1.5-pro") or clean_name.startswith("gemini-1.5-flash"):
                 available_models.append(clean_name)
 except Exception as e:
     st.error(f"無法獲取模型清單。詳細錯誤：{e}")
     st.stop()
 
 if not available_models:
-    st.error("您的 API 金鑰目前沒有可用的 1.5 系列模型權限。")
+    st.error("您的 API 金鑰目前沒有可用的 1.5 系列文字模型權限。")
     st.stop()
 
 # 0. 選擇 AI 模型
@@ -103,7 +104,6 @@ if st.button("🚀 開始分析與生成", type="primary", use_container_width=T
 
                 analysis_items_str = "\n                ".join(analysis_items)
                 
-                # 🔥 這裡更新了給 AI 的核心指令
                 prompt = f"""
                 你是一位專業的書籍評論家，特別擅長為台灣的 OPENBOOK 閱讀誌撰寫書評。所有輸出必須為「繁體中文」。
                 [主書籍] 書名: {book_title} / 作者: {book_author} / 出版社: {book_publisher}
