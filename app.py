@@ -16,26 +16,26 @@ st.set_page_config(page_title="OPENBOOK 書評小程式", page_icon="📖", layo
 st.title("📖 OPENBOOK 書評自動生成器 (純粹精煉版)")
 st.markdown("請填寫書籍資訊並勾選需要的分析項目，AI 將為您自動整合分析並產出百字書評。")
 
-# === 🌟 終極防雷：精準過濾，徹底排除 Robotics 機器人模型 ===
+# === 🌟 模型升級：轉移至 1.6 模型 ===
 available_models = []
 try:
     for m in genai.list_models():
         if 'generateContent' in m.supported_generation_methods:
             clean_name = m.name.replace("models/", "")
-            # 【關鍵修改】嚴格限制只抓取 pro 和 flash 文字模型，排除其他陷阱
-            if clean_name.startswith("gemini-1.5-pro") or clean_name.startswith("gemini-1.5-flash"):
+            # 更新過濾機制，允許 1.6 版本的模型進入選單
+            if "1.6" in clean_name:
                 available_models.append(clean_name)
 except Exception as e:
     st.error(f"無法獲取模型清單。詳細錯誤：{e}")
     st.stop()
 
 if not available_models:
-    st.error("您的 API 金鑰目前沒有可用的 1.5 系列文字模型權限。")
+    st.error("您的 API 金鑰目前沒有可用的 1.6 系列模型權限。")
     st.stop()
 
 # 0. 選擇 AI 模型
 st.subheader("⚙️ AI 模型設定")
-st.markdown("💡 推薦選擇 **`gemini-1.5-pro`** 相關選項以獲得最深度的分析！")
+st.markdown("💡 系統已自動更新。請選擇可用的 **1.6** 相關模型以進行分析。")
 selected_model = st.selectbox("請選擇模型：", available_models)
 st.markdown("---")
 
